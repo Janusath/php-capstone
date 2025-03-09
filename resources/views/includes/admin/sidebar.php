@@ -95,6 +95,30 @@ $page = isset($_GET['page']) ? $_GET['page'] : '';
           </li>
         </ul>
       </li><!-- End Components Nav -->
+      
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#trainer" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-menu-button-wide"></i><span>Trainers</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="trainer" class="nav-content collapse <?php echo (strpos($page, 'trainers/') === 0) ? 'show' : ''; ?>" data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="?page=trainers/add_trainer" class="<?php echo ($page == 'trainers/add_trainer') ? 'active' : ''; ?>">
+            <i class="bi bi-circle"></i><span>Add Trainer</span>
+            </a>
+          </li>
+          <li>
+            <a href="?page=trainers/show_trainer" class="<?php echo ($page == 'trainers/show_trainer') ? 'active' : ''; ?>">
+            <i class="bi bi-circle"></i><span>Show Trainer</span>
+            </a>
+          </li>
+          <li>
+            <a href="?page=trainers/edit_trainer" class="<?php echo ($page == 'trainers/edit_trainer') ? 'active' : ''; ?>">
+            <i class="bi bi-circle"></i><span>Edit Trainer</span>
+            </a>
+          </li>
+        
+        </ul>
+      </li><!-- End Components Nav -->
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">

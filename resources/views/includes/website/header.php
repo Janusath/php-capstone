@@ -19,7 +19,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : '';
           <li><a href="?page=home/home" class="<?php echo ($page == 'home/home') ? 'active' : ''; ?>">Home<br></a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="courses.html">Courses</a></li>
-          <li><a href="trainers.html">Trainers</a></li>
+          <li><a href="?page=trainers/trainer" class="<?php echo ($page == 'trainers/trainer') ? 'active' : ''; ?>">Trainers</a></li>
           <li><a href="?page=events/event" class="<?php echo ($page == 'events/event') ? 'active' : ''; ?>">Events</a></li>
           <li><a href="pricing.html">Pricing</a></li>
           <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>

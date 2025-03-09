@@ -3,7 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "secure_login";
+$dbname = "php_capstone_project_db";
 
 // Create connection
 $conn = mysqli_connect($servername, $username, $password, $dbname);
