@@ -1,67 +1,48 @@
 <?php
+session_start(); // Start session
 include $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/resources/views/config/db.php";
 
-if (isset($_POST['submit'])) {
-    // Sanitize inputs
-    $name = trim($_POST['name']);
-    $subject = trim($_POST['subject']);
-    $description = trim($_POST['description']);
-    $facebook = trim($_POST['facebook_link']);
-    $instagram = trim($_POST['instagram_link']);
-    $linkedin = trim($_POST['linkedin_link']);
-    $twitter = trim($_POST['twitter_link']);
+if (isset($_POST["submit"])) {
+    $name = $_POST['name'];
+    $subject = $_POST['subject'];
+    $description = $_POST['description'];
+    $facebook = $_POST['facebook_link'];
+    $instagram = $_POST['instagram_link'];
+    $linkedin = $_POST['linkedin_link'];
+    $twitter = $_POST['twitter_link'];
 
-    // Upload Directory
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . "PHP_CAPSTONE" . DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR;
+    // File upload
+    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/public/uploads/";
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-    // Ensure the upload directory exists
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
+    $originalName = pathinfo($_FILES["image"]["name"], PATHINFO_FILENAME);
+    $extension = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
+    $imageName = time() . "_" . $originalName . "." . $extension;
+    $imagePath = $uploadDir . $imageName;
 
-    // Handle Image Upload
-    if (!isset($_FILES["image"]) || $_FILES["image"]["error"] !== UPLOAD_ERR_OK) {
-        die("Error: Image file not uploaded or an error occurred.");
-    }
-
-    $imageName = time() . "_" . basename($_FILES["image"]["name"]); // Unique filename
-    $imagePath = realpath($uploadDir) . DIRECTORY_SEPARATOR . $imageName;
-
-    // Validate file type
-    $imageFileType = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-
-    if (!in_array($imageFileType, $allowedTypes)) {
-        die("Error: Only JPG, JPEG, PNG, and GIF files are allowed.");
-    }
-
-    // Check file size (Max: 2MB)
-    if ($_FILES["image"]["size"] > 2 * 1024 * 1024) {
-        die("Error: File size exceeds 2MB.");
-    }
-
-    // Move uploaded file
     if (move_uploaded_file($_FILES["image"]["tmp_name"], $imagePath)) {
-        // Prepare and execute SQL statement
-        $stmt = $conn->prepare("INSERT INTO trainer (name, subject, description, image, facebook_link, instagram_link, linkedin_link, twitter_link) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssss", $name, $subject, $description, $imageName, $facebook, $instagram, $linkedin, $twitter);
+        $sql = "INSERT INTO trainer (name, subject, description, image, facebook_link, instagram_link, linkedin_link, twitter_link) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "ssssssss", $name, $subject, $description, $imageName, $facebook, $instagram, $linkedin, $twitter);
 
-        if ($stmt->execute()) {
-            echo "Trainer added successfully.";
+        if (mysqli_stmt_execute($stmt)) {
+            $_SESSION['success'] = "Trainer added successfully!";
         } else {
-            echo "Error: " . $stmt->error;
+            $_SESSION['error'] = "Failed to add trainer: " . mysqli_error($conn);
         }
 
-        $stmt->close();
+        mysqli_stmt_close($stmt); // Close statement
     } else {
-        echo "Error: Could not upload the file.";
+        $_SESSION['error'] = "File upload failed.";
     }
 
-    $conn->close();
+    mysqli_close($conn); // Close database connection
+    // header("Location: show.php"); // Redirect to the show page
+    exit();
 }
 ?>
-
 
  
  

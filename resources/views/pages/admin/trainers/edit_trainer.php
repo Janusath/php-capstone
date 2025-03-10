@@ -1,87 +1,65 @@
 <?php
+session_start();
 include $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/resources/views/config/db.php";
 
-// Get trainer ID from URL
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    die("Error: Trainer ID not provided.");
-}
-
-$id = intval($_GET['id']);
-
 // Fetch trainer details
+$id = ($_GET['id']);
+
+// Fetch the trainer's existing data from the database
 $sql = "SELECT * FROM trainer WHERE id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();
-$trainer = $result->fetch_assoc();
+$row = $result->fetch_assoc();
+$stmt->close();
 
-if (!$trainer) {
-    die("Error: Trainer not found.");
-}
+if (isset($_POST["submit"])) {
+    $name = $_POST['name'];
+    $subject = $_POST['subject'];
+    $description = $_POST['description'];
+    $facebook = $_POST['facebook_link'];
+    $instagram = $_POST['instagram_link'];
+    $linkedin = $_POST['linkedin_link'];
+    $twitter = $_POST['twitter_link'];
+    $imageName = $row['image'];  // Preserve existing image if no new image is uploaded
 
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = trim($_POST['name']);
-    $subject = trim($_POST['subject']);
-    $description = trim($_POST['description']);
-    $facebook = trim($_POST['facebook_link']);
-    $instagram = trim($_POST['instagram_link']);
-    $linkedin = trim($_POST['linkedin_link']);
-    $twitter = trim($_POST['twitter_link']);
+    // File upload
+    if ($_FILES["image"]["name"]) {
+        $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/public/uploads/";
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-    // Upload directory
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/public/uploads/";
-
-    // Initialize $imageName to preserve old image if no new one is uploaded
-    $imageName = $trainer['image'];
-
-    // Check if a new image is uploaded
-    if (!empty($_FILES["image"]["name"])) {
-        $imageName = time() . "_" . basename($_FILES["image"]["name"]);
+        $originalName = pathinfo($_FILES["image"]["name"], PATHINFO_FILENAME);
+        $extension = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
+        $imageName = time() . "_" . $originalName . "." . $extension;
         $imagePath = $uploadDir . $imageName;
 
-        // Validate file type
-        $imageFileType = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-
-        if (!in_array($imageFileType, $allowedTypes)) {
-            die("Error: Only JPG, JPEG, PNG, and GIF files are allowed.");
-        }
-
-        // Check file size (Max: 2MB)
-        if ($_FILES["image"]["size"] > 2 * 1024 * 1024) {
-            die("Error: File size exceeds 2MB.");
-        }
-
-        // Move uploaded file
         if (!move_uploaded_file($_FILES["image"]["tmp_name"], $imagePath)) {
-            die("Error: Could not upload the file.");
-        }
-
-        // Delete old image if new image uploaded
-        if (!empty($trainer['image'])) {
-            unlink($uploadDir . $trainer['image']);
+            $_SESSION['error'] = "File upload failed.";
+            header("Location: edit.php?id=" . $id);
+            exit();
         }
     }
 
-    // Update trainer details in the database
-    $updateSql = "UPDATE trainer SET name=?, subject=?, description=?, image=?, facebook_link=?, instagram_link=?, linkedin_link=?, twitter_link=? WHERE id=?";
-    $updateStmt = $conn->prepare($updateSql);
-    $updateStmt->bind_param("ssssssssi", $name, $subject, $description, $imageName, $facebook, $instagram, $linkedin, $twitter, $id);
+    // Update trainer information in the database
+    $sql = "UPDATE trainer 
+            SET name = ?, subject = ?, description = ?, image = ?, facebook_link = ?, instagram_link = ?, linkedin_link = ?, twitter_link = ?
+            WHERE id = ?";
 
-    if ($updateStmt->execute()) {
-        // Redirect to the trainers' list or display success message
-        header("Location: http://localhost/php_capstone/admin/index.php?page=trainers/show_trainer");
-        exit(); // Make sure to call exit after header to stop further execution
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssssssssi", $name, $subject, $description, $imageName, $facebook, $instagram, $linkedin, $twitter, $id);
+
+    if ($stmt->execute()) {
+        $_SESSION['success'] = "Trainer updated successfully!";
+        // header("Location: show.php");
+        exit();
     } else {
-        echo "Error: " . $updateStmt->error;
+        $_SESSION['error'] = "Failed to update trainer: " . mysqli_error($conn);
     }
 
-    $updateStmt->close();
+    $stmt->close(); // Close statement
+    mysqli_close($conn); // Close database connection
 }
-
-$conn->close();
 ?>
 
 
@@ -109,57 +87,59 @@ $conn->close();
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Name</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="name" value="<?= htmlspecialchars($trainer['name']) ?>" required>
+                                    <input type="text" class="form-control" name="name" value="<?php echo $row['name'] ?>" required>
+
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Subject</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="subject" value="<?= htmlspecialchars($trainer['subject']) ?>" required>
+                                    <input type="text" class="form-control" name="subject" value="<?php echo $row['subject'] ?>" required>
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Facebook Link</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="facebook_link" value="<?= htmlspecialchars($trainer['facebook_link']) ?>">
+                                    <input type="text" class="form-control" name="facebook_link" value="<?php echo $row['facebook_link'] ?>">
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Instagram Link</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="instagram_link" value="<?= htmlspecialchars($trainer['instagram_link']) ?>">
+                                    <input type="text" class="form-control" value="<?php echo $row['instagram_link'] ?>" name="instagram_link">
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">LinkedIn Link</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="linkedin_link" value="<?= htmlspecialchars($trainer['linkedin_link']) ?>">
+                                    <input type="text" class="form-control" value="<?php echo $row['linkedin_link'] ?>" name="linkedin_link">
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Twitter Link</label>
                                 <div class="col-sm-10">
-                                    <input type="text" class="form-control" name="twitter_link" value="<?= htmlspecialchars($trainer['twitter_link']) ?>">
+                                    <input type="text" class="form-control" value="<?php echo $row['twitter_link'] ?>" name="twitter_link">
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Description</label>
                                 <div class="col-sm-10">
-                                    <textarea class="form-control" style="height: 100px" name="description"><?= htmlspecialchars($trainer['description']) ?></textarea>
+                                    <textarea class="form-control" style="height: 100px" name="description"><?php echo $row['description']; ?></textarea>
+
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <label class="col-sm-2 col-form-label">Current Image</label>
                                 <div class="col-sm-10">
-                                    <?php if (!empty($trainer['image'])): ?>
-                                        <img src="/PHP_CAPSTONE/public/uploads/<?= htmlspecialchars($trainer['image']) ?>" width="150" alt="Trainer Image">
+                                    <?php if (!empty($row['image'])): ?>
+                                        <img src="/PHP_CAPSTONE/public/uploads/<?php echo $row['image']; ?>" width="150" alt="Trainer Image">
                                     <?php else: ?>
                                         <p>No image available</p>
                                     <?php endif; ?>

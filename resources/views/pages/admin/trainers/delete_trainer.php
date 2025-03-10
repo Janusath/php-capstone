@@ -19,10 +19,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $trainer = $result->fetch_assoc();
 
-// If trainer not found, show an error
-if (!$trainer) {
-    die("Error: Trainer not found.");
-}
 
 // Delete image from server if it exists
 $imagePath = $_SERVER['DOCUMENT_ROOT'] . "/PHP_CAPSTONE/public/uploads/" . $trainer['image'];
